@@ -6,7 +6,7 @@ TODO:
 - Car Mechanics (Done)
 - Track Generation (Done)
 - Ray Casting for car vision (Done)
-- RL Agent
+- RL Agent (Done)
 """
 
 from PIL import Image, ImageDraw
@@ -26,9 +26,6 @@ def get_sign(x):
     if x != 0: 
         return abs(x)//x
     return 0
-
-def rad_to_deg(x):
-    return (180/m.pi) * x
 
 class Road(pg.sprite.Sprite):
 
@@ -349,6 +346,8 @@ class CarSimulation:
                     phi += car.raycast_step
                     phi %= 360
 
+
+                # AI IO
                 states.append(vision_data)
                 action = self.agent._get_state_action(vision_data)
                 actions.append(action)
@@ -403,6 +402,7 @@ class CarSimulation:
             output_string = "Episode: {:0>5} Score: {:0>3} Reward: {:0>7} T+: {} @ {:.3f}E/s".format(episode, score, sum(rewards), time_str, simulation_number/elapsed_time)
             print(output_string)
 
+            # Update AI
             self.agent._train_episode(states, actions, rewards, episode)
 
 def main():
