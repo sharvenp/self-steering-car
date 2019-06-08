@@ -312,6 +312,7 @@ class CarSimulation:
             self.create_track_sprite(name, points, road_width)
 
             road = Road()
+            np.pad(road.binary_map, car.RAY_LENGTH, 'constant')
 
             all_sprites = pg.sprite.Group()
             all_sprites.add(road)
@@ -375,7 +376,7 @@ class CarSimulation:
                 if car.x > self.WIDTH:
                     score += 1
                     game_over = True
-                    rewards.append(self.WIN_REWARD)
+                    rewards.append(self.WIN_REWARD * (weave_factor/10))
 
                 if not game_over:
                     rewards.append(car.x/2)
