@@ -67,7 +67,7 @@ class Agent:
                 fn = prefix+str(m)+suffix
                 self._load_model('models/'+fn)
             else:
-                print(colored('FATAL: DIRECTORY EMPTY', 'red')) 
+                print(colored('FATAL: MODELS DIRECTORY EMPTY', 'red')) 
                 quit(0)
                 
     def _load_model(self, directory):
@@ -102,7 +102,7 @@ class Agent:
                                                      discount_reward_placeholder], outputs=[],
                                                      updates=updates)
 
-    def _get_state_action(self, state_input):
+    def get_state_action(self, state_input):
 
         # Get agent action from a given state
         action_prob = np.squeeze(self.model.predict(np.asarray([state_input])))
@@ -117,7 +117,7 @@ class Agent:
         discount_reward = self._compute_discounted_rewards(R)
         self.training_function([S, action_onehot, discount_reward])
 
-    def _train_episode(self, s, a, r, game, save=True):
+    def train_episode(self, s, a, r, game, save=True):
 
         # Wrapper for _train that also saves
         if s and a and r:

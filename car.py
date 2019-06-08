@@ -195,7 +195,7 @@ class Car(pg.sprite.Sprite):
                 break
 
             new_blocks.append(block)
-            
+        
         return new_blocks
 
 class CarSimulation:
@@ -214,6 +214,9 @@ class CarSimulation:
         self.FRAME_RATE = 30
 
         self.agent = Agent([(4, ''), (3, 'relu'), (3, 'relu'), (2, 'softmax')], True, 0.0007, 0.99, 100)
+        
+        # self.agent._load_model('models/chkpnt-100.h5') # Use this line to load specific models
+        
         self.LOSE_REWARD = -window_width*1.5
         self.WIN_REWARD = window_width*2
 
@@ -341,15 +344,18 @@ class CarSimulation:
                     if debug:
                         for block in blocks:
                             pg.draw.rect(screen, self.RAY_CAST_COLOR, (block[0], block[1], 1, 1))
-                    vision_data.append(car._get_distance(int(car.x), int(car.y), blocks[-1][0], blocks[-1][1])/car.RAY_LENGTH)
+
+                    if blocks:
+                        vision_data.append(car._get_distance(int(car.x), int(car.y), blocks[-1][0], blocks[-1][1])/car.RAY_LENGTH)
+                    else:
+                        vision_data.append(1)
 
                     phi += car.raycast_step
                     phi %= 360
 
-
                 # AI IO
                 states.append(vision_data)
-                action = self.agent._get_state_action(vision_data)
+                action = self.agent.get_state_action(vision_data)
                 actions.append(action)
                 inp[0] = 0.8 # constant speed
                 inp[1] = (2 * action) - 1
@@ -403,7 +409,7 @@ class CarSimulation:
             print(output_string)
 
             # Update AI
-            self.agent._train_episode(states, actions, rewards, episode)
+            self.agent.train_episode(states, actions, rewards, episode)
 
 def main():
     c = CarSimulation(700, 700)
