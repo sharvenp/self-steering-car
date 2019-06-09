@@ -215,7 +215,7 @@ class CarSimulation:
 
         self.agent = Agent([(4, ''), (3, 'relu'), (3, 'relu'), (2, 'softmax')], 0.0007, 0.99, 100, True)
         
-        # self.agent._load_model('models/chkpnt-100.h5') # Use this line to load specific models
+        # self.agent._load_model('models/chkpnt-'+str(self.curr_model)+'.h5') # Use this line to load specific models
         
         self.LOSE_REWARD = -window_width*1.5
         self.WIN_REWARD = window_width*2
@@ -225,7 +225,7 @@ class CarSimulation:
         # y = mx + b
         return int((m*x) + b)
 
-    def generate_track(self, start, end, n, weave_factor):
+    def generate_track(self, start, end, n, weave_factor, min_weave_factor):
         
         points = [start]
 
@@ -244,7 +244,9 @@ class CarSimulation:
         # Weave lines
         for i in range(1, len(points)):
             p = points[i]
-            points[i] = (int(p[0]), int(p[1] + ((((2*r.random()) - 1) * weave_factor))))
+            factor = ((2 * r.random()) - 1)
+            factor += (1 - abs(factor)) * min_weave_factor
+            points[i] = (int(p[0]), int(p[1] + (factor * weave_factor)))
         
         points.append(end)
         return points
@@ -302,8 +304,9 @@ class CarSimulation:
             # Generate track based on params
             road_width = 100
             weave_factor = 110
+            minumum_weaving_factor = 0.4
             n = 6
-            points = self.generate_track((0, self.HEIGHT//2), (self.WIDTH, self.HEIGHT//2), n, weave_factor)
+            points = self.generate_track((0, self.HEIGHT//2), (self.WIDTH, self.HEIGHT//2), n, weave_factor, minumum_weaving_factor)
 
             # Make car and face it in track direction
             car = Car(30, self.HEIGHT//2)
@@ -321,7 +324,6 @@ class CarSimulation:
 
             game_over = False
             states, actions, rewards = [], [], []
-
             while not game_over:
                 
                 screen.fill(self.BACKGROUND_COLOR)    
@@ -359,7 +361,7 @@ class CarSimulation:
                 states.append(vision_data)
                 action = self.agent.get_state_action(vision_data)
                 actions.append(action)
-                inp[0] = 0.8 # constant speed
+                inp[0] = 0.7 # constant speed
                 inp[1] = (2 * action) - 1
 
                 # Show Engine and Turn as text
@@ -371,7 +373,7 @@ class CarSimulation:
                 # Collision Check
                 if pg.sprite.spritecollide(car, [road], False, pg.sprite.collide_mask): 
                     game_over = True
-                    rewards.append(self.LOSE_REWARD)
+                    rewards.append(self.LOSE_REWARD - (car.x/2))
 
                 # Win check
                 if car.x > self.WIDTH:
@@ -394,7 +396,7 @@ class CarSimulation:
                     screen.blit(engine_text, (10, self.HEIGHT - 60))
                     screen.blit(turn_text, (10, self.HEIGHT - 30))
                     clock.tick(self.FRAME_RATE)
-                    pg.display.flip()     
+                    pg.display.flip()   
 
             # print("Score:", score) 
             elapsed_time = time.time() - start_time    
