@@ -213,7 +213,7 @@ class CarSimulation:
 
         self.FRAME_RATE = 30
 
-        self.agent = Agent([(4, ''), (3, 'relu'), (3, 'relu'), (2, 'softmax')], True, 0.0007, 0.99, 100)
+        self.agent = Agent([(4, ''), (3, 'relu'), (3, 'relu'), (2, 'softmax')], 0.0007, 0.99, 100, True)
         
         # self.agent._load_model('models/chkpnt-100.h5') # Use this line to load specific models
         
@@ -279,7 +279,7 @@ class CarSimulation:
         
         image.save(filename, 'PNG')
     
-    def run(self, debug=False):
+    def run(self, debug=False, generate_new_track=True):
         
         # Init
         pg.init()
@@ -309,10 +309,11 @@ class CarSimulation:
             car = Car(30, self.HEIGHT//2)
             
             name = "resources/road.png"
-            self.create_track_sprite(name, points, road_width)
+            if generate_new_track:
+                self.create_track_sprite(name, points, road_width)
 
             road = Road()
-            np.pad(road.binary_map, car.RAY_LENGTH, 'constant')
+            road.binary_map = np.pad(road.binary_map, ((0,0), (0, car.RAY_LENGTH)), 'constant')
 
             all_sprites = pg.sprite.Group()
             all_sprites.add(road)
@@ -384,12 +385,6 @@ class CarSimulation:
                 # Debug Gizmos
                 if debug:
 
-                    # Draw track guide
-                    for i in range(1, len(points)):
-                        p1 = points[i - 1]
-                        p2 = points[i]
-                        pg.draw.line(screen, (0, 255, 0), p1, p2)
-
                     # Draw Collider
                     pg.draw.rect(screen, (0, 0, 255), car.rect, 2)
                 
@@ -414,7 +409,7 @@ class CarSimulation:
 
 def main():
     c = CarSimulation(700, 700)
-    c.run(debug=True)
+    c.run(debug=True, generate_new_track=True)
 
 if __name__ == "__main__":
     main()

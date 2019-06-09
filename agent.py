@@ -16,7 +16,7 @@ from termcolor import colored
 
 class Agent:
 
-    def __init__(self, architecture, load_most_recent, lr, gamma, saving_interval):
+    def __init__(self, architecture, lr, gamma, saving_interval, load_most_recent):
 
         colorama.init() # This enables colored print statements
 
