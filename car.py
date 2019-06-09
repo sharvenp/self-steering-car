@@ -245,7 +245,7 @@ class CarSimulation:
         for i in range(1, len(points)):
             p = points[i]
             factor = ((2 * r.random()) - 1)
-            factor += (1 - abs(factor)) * min_weave_factor
+            factor += (1 - abs(factor)) * min_weave_factor * get_sign(factor)
             points[i] = (int(p[0]), int(p[1] + (factor * weave_factor)))
         
         points.append(end)
@@ -281,7 +281,7 @@ class CarSimulation:
         
         image.save(filename, 'PNG')
     
-    def run(self, debug=False, generate_new_track=True):
+    def run(self, debug=False, generate_new_track=True, keyboard_play=False):
         
         # Init
         pg.init()
@@ -302,11 +302,11 @@ class CarSimulation:
         while True:
 
             # Generate track based on params
-            road_width = 100    
-            weave_factor = 110
+            road_width = 90    
+            weave_factor = 100
             minumum_weaving_factor = 0.4
-            n = 6
-            points = self.generate_track((0, self.HEIGHT//2), (self.WIDTH, self.HEIGHT//2), n, weave_factor, minumum_weaving_factor)
+            number_of_weaves = 10
+            points = self.generate_track((0, self.HEIGHT//2), (self.WIDTH, self.HEIGHT//2), number_of_weaves, weave_factor, minumum_weaving_factor)
 
             car = Car(30, self.HEIGHT//2)
             
@@ -323,6 +323,7 @@ class CarSimulation:
 
             game_over = False
             states, actions, rewards = [], [], []
+
             while not game_over:
                 
                 screen.fill(self.BACKGROUND_COLOR)    
@@ -336,32 +337,34 @@ class CarSimulation:
                     return
 
                 # Keyboard Input
-                # inp[0] = int(keys[pg.K_w])
-                # inp[1] = int(keys[pg.K_a]) - int(keys[pg.K_d])            
+                if keyboard_play:
+                    # inp[0] = int(keys[pg.K_w])
+                    inp[0] = 0.7
+                    inp[1] = int(keys[pg.K_a]) - int(keys[pg.K_d])            
+                else:
+                    # Draw Vision
+                    vision_data = []
+                    phi = (car.angle - (car.RAY_ANGLE/2)) % 360
+                    while phi != (car.angle + (car.RAY_ANGLE/2) + car.raycast_step) % 360:
+                        blocks = car.cast_ray(int(car.x), int(car.y), phi, road.binary_map)
+                        if debug:
+                            for block in blocks:
+                                pg.draw.rect(screen, self.RAY_CAST_COLOR, (block[0], block[1], 1, 1))
 
-                # Draw Vision
-                vision_data = []
-                phi = (car.angle - (car.RAY_ANGLE/2)) % 360
-                while phi != (car.angle + (car.RAY_ANGLE/2) + car.raycast_step) % 360:
-                    blocks = car.cast_ray(int(car.x), int(car.y), phi, road.binary_map)
-                    if debug:
-                        for block in blocks:
-                            pg.draw.rect(screen, self.RAY_CAST_COLOR, (block[0], block[1], 1, 1))
+                        if blocks:
+                            vision_data.append(car._get_distance(int(car.x), int(car.y), blocks[-1][0], blocks[-1][1])/car.RAY_LENGTH)
+                        else:
+                            vision_data.append(1)
 
-                    if blocks:
-                        vision_data.append(car._get_distance(int(car.x), int(car.y), blocks[-1][0], blocks[-1][1])/car.RAY_LENGTH)
-                    else:
-                        vision_data.append(1)
+                        phi += car.raycast_step
+                        phi %= 360
 
-                    phi += car.raycast_step
-                    phi %= 360
-
-                # AI IO
-                states.append(vision_data)
-                action = self.agent.get_state_action(vision_data)
-                actions.append(action)
-                inp[0] = 0.7 # constant speed
-                inp[1] = (2 * action) - 1
+                    # AI IO
+                    states.append(vision_data)
+                    action = self.agent.get_state_action(vision_data)
+                    actions.append(action)
+                    inp[0] = 0.7 # constant speed
+                    inp[1] = (2 * action) - 1
 
                 # Show Engine and Turn as text
                 engine_text = font.render('Engine: ' + str(inp[0]), False, (255, 255, 255))
@@ -372,15 +375,17 @@ class CarSimulation:
                 # Collision Check
                 if pg.sprite.spritecollide(car, [road], False, pg.sprite.collide_mask): 
                     game_over = True
-                    rewards.append(self.LOSE_REWARD - (car.x/2))
+                    if not keyboard_play:
+                        rewards.append(self.LOSE_REWARD - (car.x/2))
 
                 # Win check
                 if car.x > self.WIDTH:
                     score += 1
                     game_over = True
-                    rewards.append(self.WIN_REWARD * (weave_factor/10))
+                    if not keyboard_play:
+                        rewards.append(self.WIN_REWARD * (weave_factor/10))
 
-                if not game_over:
+                if not game_over and not keyboard_play:
                     rewards.append(car.x/2)
 
                 # Debug Gizmos
@@ -397,21 +402,21 @@ class CarSimulation:
                     clock.tick(self.FRAME_RATE)
                     pg.display.flip()   
 
-            # print("Score:", score) 
-            elapsed_time = time.time() - start_time    
-            time_str = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))  
-            simulation_number += 1
-            episode += 1
-            output_string = "Episode: {:0>5} Score: {:0>3} Reward: {:0>7} T+: {} @ {:.3f}E/s".format(episode, score, sum(rewards), time_str, simulation_number/elapsed_time)
-            print(output_string)
+            if not keyboard_play:
+                elapsed_time = time.time() - start_time    
+                time_str = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))  
+                simulation_number += 1
+                episode += 1
+                output_string = "Episode: {:0>5} Score: {:0>3} Reward: {:0>7} T+: {} @ {:.3f}E/s".format(episode, score, sum(rewards), time_str, simulation_number/elapsed_time)
+                print(output_string)
 
-            # Update AI
-            self.agent.train_episode(states, actions, rewards, episode)
+                # Update AI
+                self.agent.train_episode(states, actions, rewards, episode)
 
 def main():
     c = CarSimulation(700, 700)
     # debug toggles debug vision and generate_new_track toggles whether or not a new track should be generated each time
-    c.run(debug=True, generate_new_track=True) 
+    c.run(debug=True, generate_new_track=True, keyboard_play=False) 
 
 if __name__ == "__main__":
     main()

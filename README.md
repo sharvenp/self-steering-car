@@ -49,6 +49,8 @@ In car.py, there are 3 main classes: Road, Car and Car Simulation. Road loads th
 
 The parameters of the agent and whether or not the agent should load the most recent model can be edited in the init method if the Car Simulation Class. In the __main__ block, the debug vision can be toggled as well as whether or not the simulation should generate a new track each time or should use one pre-drawn track each time. The parameters of the track generation can edited in the run method of the Car Simulation Class. 
 
+In the __main__ block, keyboard_play will toggle keyboard input. If it is true, you control the car and try the simulation for yourself! (Controls are A to turn left and D to turn right).
+
 # Dependencies
 - keras
 - pygame
