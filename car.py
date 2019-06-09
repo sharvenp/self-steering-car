@@ -302,13 +302,12 @@ class CarSimulation:
         while True:
 
             # Generate track based on params
-            road_width = 100
+            road_width = 100    
             weave_factor = 110
             minumum_weaving_factor = 0.4
             n = 6
             points = self.generate_track((0, self.HEIGHT//2), (self.WIDTH, self.HEIGHT//2), n, weave_factor, minumum_weaving_factor)
 
-            # Make car and face it in track direction
             car = Car(30, self.HEIGHT//2)
             
             name = "resources/road.png"
@@ -411,7 +410,8 @@ class CarSimulation:
 
 def main():
     c = CarSimulation(700, 700)
-    c.run(debug=True, generate_new_track=True)
+    # debug toggles debug vision and generate_new_track toggles whether or not a new track should be generated each time
+    c.run(debug=True, generate_new_track=True) 
 
 if __name__ == "__main__":
     main()
